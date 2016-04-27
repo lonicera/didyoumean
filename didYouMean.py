@@ -1,5 +1,5 @@
 import os
-import urllib2
+import urllib3
 import io
 import gzip
 import sys
@@ -7,26 +7,17 @@ import urllib
 import re
 
 from bs4 import BeautifulSoup
-from StringIO import StringIO
-
+from io import StringIO
 def getPage(url):
-    request = urllib2.Request(url)
-    request.add_header('Accept-encoding', 'gzip')
-    request.add_header('User-Agent','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_7_3) AppleWebKit/535.20 (KHTML, like Gecko) Chrome/19.0.1036.7 Safari/535.20')
-    response = urllib2.urlopen(request)
-    if response.info().get('Content-Encoding') == 'gzip':
-        buf = StringIO( response.read())
-        f = gzip.GzipFile(fileobj=buf)
-        data = f.read()
-    else:
-        data = response.read()
-    return data
+    http = urllib3.PoolManager()
+    page = http.request('GET', url)
+    return page.data
 
 def didYouMean(q):
     q = str(str.lower(q)).strip()
-    url = "http://www.google.com/search?q=" + urllib.quote(q)
+    url = "http://www.google.com/search?q=" + q
     html = getPage(url)
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, "html.parser")
     ans = soup.find('a', attrs={'class' : 'spell'})
     try:
         result = repr(ans.contents)
@@ -42,4 +33,4 @@ def didYouMean(q):
 
 if __name__ == "__main__":
     response = didYouMean(sys.argv[1])
-    print response
+    print (response)
